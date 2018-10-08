@@ -9,6 +9,11 @@ using System.Diagnostics;
 using NLog;
 using model.hosts;
 using System.Management;
+using System.DirectoryServices;
+using System.Text;
+using System.Security.Principal;
+using XperiCode.Impersonator;
+using Models.hosts;
 
 namespace lib.WinInventory
 {
@@ -21,6 +26,297 @@ namespace lib.WinInventory
         #endregion
 
         #region private_method
+        
+        private List<string> GetLocalUser()
+        {
+            List<string> _ret = new List<string>();
+
+            try
+            {
+                string host_name = Environment.MachineName.ToLower();
+                SelectQuery sQuery = new SelectQuery("Win32_UserAccount", "Domain='" + host_name + "'");
+
+                ManagementObjectSearcher aManagementObjectSearcher = new ManagementObjectSearcher(sQuery);
+
+                //ManagementObjectCollection représente différentes collections d'objets de gestion extraits via WMI. 
+                ManagementObjectCollection objCollection = aManagementObjectSearcher.Get();
+
+                //int aaaa = objCollection.Count;
+
+                //ManagementObjectCollection objCollection = myProcessorObject.Get();
+                if (objCollection.Count > 0)
+                {
+                    foreach (ManagementObject obj in objCollection)
+                    {
+                        //UInt32 AccountType = this.GetProperties<UInt32>(obj, "AccountType");
+                        //string Caption = this.GetProperties<string>(obj, "Caption").ToLower();
+                        //string Description = this.GetProperties<string>(obj, "Description").ToLower();
+                        //Boolean Disabled = this.GetProperties<Boolean>(obj, "Disabled");
+                        //string Domain = this.GetProperties<string>(obj, "Domain").ToLower();
+                        //string FullName = this.GetProperties<string>(obj, "FullName").ToLower();
+                        //DateTime InstallDate = this.GetProperties<DateTime>(obj, "InstallDate");
+                        //Boolean LocalAccount = this.GetProperties<Boolean>(obj, "LocalAccount");
+                        //Boolean Lockout = this.GetProperties<Boolean>(obj, "Lockout");
+                        string Name = this.GetProperties<string>(obj, "Name").ToLower();
+                        //Boolean PasswordChangeable = this.GetProperties<Boolean>(obj, "PasswordChangeable");
+                        //Boolean PasswordExpires = this.GetProperties<Boolean>(obj, "PasswordExpires");
+                        //Boolean PasswordRequired = this.GetProperties<Boolean>(obj, "PasswordRequired");
+                        //string SID = this.GetProperties<string>(obj, "Name").ToLower();
+                        //UInt32 SIDType = this.GetProperties<UInt32>(obj, "SIDType");
+                        //string Status = this.GetProperties<string>(obj, "Status").ToLower();
+
+                        if (Name.Length > 0)
+                        {
+                            _ret.Add(Name);
+                        }
+                        //string grp = this.GetGroupsForUser(host_name, Name);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "GetLocalUser");
+            }
+
+            return _ret;
+        }
+
+        private void LoadInstalledPrograms()
+        {
+            List<string> installedPrograms = new List<string>();
+        
+            ManagementObjectSearcher mos = new ManagementObjectSearcher("SELECT * FROM Win32_Product");
+        
+            ManagementObjectCollection managementObjectCollection = mos.Get();
+        
+            foreach (ManagementObject mo in managementObjectCollection)
+            {
+                installedPrograms.Add(mo["Name"].ToString());
+            }
+        
+            Console.WriteLine("Length - {0}", installedPrograms.Count);
+        }
+
+        private void GetSoftware()
+        {
+           try
+           {               
+
+                ManagementObjectSearcher mos = new ManagementObjectSearcher("SELECT * FROM Win32_Product");
+
+                //ManagementObjectCollection représente différentes collections d'objets de gestion extraits via WMI. 
+                ManagementObjectCollection objCollection = mos.Get();
+
+               // int aaaa = objCollection.Count;
+
+                //ManagementObjectCollection objCollection = myProcessorObject.Get();
+                if (objCollection.Count > 0)
+                {
+                    foreach (ManagementObject obj in objCollection)
+                    {
+
+                        host_software _newSW = new host_software();
+
+                        _newSW.Name = this.GetProperties<string>(obj, "Name").ToLower();
+                        _newSW.AssignmentType = this.GetProperties<UInt16>(obj, "AssignmentType");
+                        _newSW.Caption = this.GetProperties<string>(obj, "Caption").ToLower();
+                        _newSW.Description = this.GetProperties<string>(obj, "Description").ToLower();
+                        _newSW.IdentifyingNumber = this.GetProperties<string>(obj, "IdentifyingNumber").ToLower();
+                        _newSW.InstallDate = this.GetProperties<string>(obj, "InstallDate").ToLower();
+                        _newSW.InstallDate2 = this.GetProperties<DateTime>(obj, "InstallDate2");
+                        _newSW.InstallLocation = this.GetProperties<string>(obj, "InstallLocation").ToLower();
+                        _newSW.InstallState = this.GetProperties<Int16>(obj, "InstallState");
+                        _newSW.HelpLink = this.GetProperties<string>(obj, "HelpLink").ToLower();
+                        _newSW.HelpTelephone = this.GetProperties<string>(obj, "HelpTelephone").ToLower();
+                        _newSW.InstallSource = this.GetProperties<string>(obj, "InstallSource").ToLower();
+                        _newSW.Language = this.GetProperties<string>(obj, "Language").ToLower();
+                        _newSW.LocalPackage = this.GetProperties<string>(obj, "LocalPackage").ToLower();
+                        _newSW.PackageCache = this.GetProperties<string>(obj, "PackageCache").ToLower();
+                        _newSW.PackageCode = this.GetProperties<string>(obj, "PackageCode").ToLower();
+                        _newSW.PackageName = this.GetProperties<string>(obj, "PackageName").ToLower();
+                        _newSW.ProductID = this.GetProperties<string>(obj, "ProductID").ToLower();
+                        _newSW.RegOwner = this.GetProperties<string>(obj, "RegOwner").ToLower();
+                        _newSW.RegCompany = this.GetProperties<string>(obj, "RegCompany").ToLower();
+                        _newSW.SKUNumber = this.GetProperties<string>(obj, "SKUNumber").ToLower();
+                        _newSW.Transforms = this.GetProperties<string>(obj, "Transforms").ToLower();
+                        _newSW.URLInfoAbout = this.GetProperties<string>(obj, "URLInfoAbout").ToLower();
+                        _newSW.URLUpdateInfo = this.GetProperties<string>(obj, "URLUpdateInfo").ToLower();
+                        _newSW.Vendor = this.GetProperties<string>(obj, "Vendor").ToLower();
+                        _newSW.WordCount = this.GetProperties<UInt32>(obj, "WordCount");
+                        _newSW.Version = this.GetProperties<string>(obj, "Version").ToLower();
+
+                        if (_newSW.Name.Length > 0)
+                        {
+                            this.MyHost.softwares.Add(_newSW);
+                        }
+                        
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "GetLocalUser");
+            }
+
+           
+        }
+
+        private IEnumerable<string> GetFileList(string fileSearchPattern, string rootFolderPath)
+        {
+            Queue<string> pending = new Queue<string>();
+            pending.Enqueue(rootFolderPath);
+            string[] tmp;
+            while (pending.Count > 0)
+            {
+                rootFolderPath = pending.Dequeue();
+                try
+                {
+                    tmp = Directory.GetFiles(rootFolderPath, fileSearchPattern);
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    continue;
+                }
+                for (int i = 0; i < tmp.Length; i++)
+                {
+                    yield return tmp[i];
+                }
+                tmp = Directory.GetDirectories(rootFolderPath);
+                for (int i = 0; i < tmp.Length; i++)
+                {
+                    pending.Enqueue(tmp[i]);
+                }
+            }
+        }
+
+        private List<string> GetLocalGroup()
+        {
+            List<string> _ret = new List<string>();
+
+            try
+            {
+                string host_name = Environment.MachineName.ToLower();
+                SelectQuery sQuery = new SelectQuery("Win32_Group", "Domain='" + host_name + "'");
+
+                ManagementObjectSearcher aManagementObjectSearcher = new ManagementObjectSearcher(sQuery);
+
+                //ManagementObjectCollection représente différentes collections d'objets de gestion extraits via WMI. 
+                ManagementObjectCollection objCollection = aManagementObjectSearcher.Get();
+
+                //int aaaa = objCollection.Count;
+
+                //ManagementObjectCollection objCollection = myProcessorObject.Get();
+                if (objCollection.Count > 0)
+                {
+                    foreach (ManagementObject obj in objCollection)
+                    {
+                                               
+
+                        //string Caption = this.GetProperties<string>(obj, "Caption").ToLower();
+                        //string Description = this.GetProperties<string>(obj, "Description").ToLower();
+                        //DateTime InstallDate = this.GetProperties<DateTime>(obj, "InstallDate");
+                        //string Status = this.GetProperties<string>(obj, "Caption").ToLower();
+                        //Boolean LocalAccount = this.GetProperties<Boolean>(obj, "LocalAccount");
+                        //string SID = this.GetProperties<string>(obj, "SID").ToLower();
+                        //uint SIDType = this.GetProperties<uint>(obj, "SIDType");
+                        //string Domain = this.GetProperties<string>(obj, "Domain").ToLower();
+                        string Name = this.GetProperties<string>(obj, "Name").ToLower();
+                        if (Name.Length > 0)
+                        {
+                            _ret.Add(Name);
+                        }
+
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "GetLocalUser");
+            }
+
+            return _ret;
+        }
+
+        private List<string> GetUsersInGroup(string group)
+        {
+            List<string> _ret = new List<string>();
+
+                       
+
+
+            string sFromWhere = "LDAP://WM2008R2ENT:389/dc=dom,dc=fr";
+            DirectoryEntry deBase = new DirectoryEntry(sFromWhere, "dom\\jpb", "test.2011");
+
+            /* To find all the users member of groups "Grp1"  :
+             * Set the base to the groups container DN; for example root DN (dc=societe,dc=fr) 
+             * Set the scope to subtree
+             * Use the following filter :
+             * (member:1.2.840.113556.1.4.1941:=CN=Grp1,OU=MonOu,DC=X)
+             * coupled with LDAP_MATCHING_RULE_BIT_AND on userAccountControl with ACCOUNTDISABLE
+             */
+            DirectorySearcher dsLookFor = new DirectorySearcher(deBase);
+            dsLookFor.Filter = "(&(memberof:1.2.840.113556.1.4.1941:=CN=MonGrpSec,OU=MonOu,DC=dom,DC=fr)(userAccountControl:1.2.840.113556.1.4.803:=2))";
+            dsLookFor.SearchScope = SearchScope.Subtree;
+            dsLookFor.PropertiesToLoad.Add("cn");
+
+            SearchResultCollection srcUsers = dsLookFor.FindAll();
+
+            /* Just to know if user is present in an other group
+             */
+            foreach (SearchResult srcUser in srcUsers)
+            {
+                Console.WriteLine("{0}", srcUser.Path);
+            }
+
+            return _ret;
+        }
+
+        private string GetGroupsForUser(string domain,string UserName)
+        {
+            ManagementObjectSearcher searcher = new ManagementObjectSearcher("select * from Win32_GroupUser where PartComponent=\"Win32_UserAccount.Domain='"+domain+"',Name='" + UserName + "'\"");
+            StringBuilder strGroups = new StringBuilder();
+
+            foreach (ManagementObject mObject in searcher.Get())
+            {
+                ManagementPath path = new ManagementPath(mObject["GroupComponent"].ToString());
+
+                if (path.ClassName == "Win32_Group")
+                {
+                    String[] names = path.RelativePath.Split(',');
+                    strGroups.Append(names[1].Substring(names[1].IndexOf("=") + 1).Replace('"', ' ').Trim() + ", ");
+                }
+            }
+            return strGroups.ToString();
+        }
+
+        private string GetGroupsForCurentDomainUser()
+        {
+            string domain = "csa.lan";
+            string UserName = Environment.UserName;
+
+            ManagementObjectSearcher searcher = new ManagementObjectSearcher("select * from Win32_GroupUser where PartComponent=\"Win32_UserAccount.Domain='" + domain + "',Name='" + UserName + "'\"");
+            StringBuilder strGroups = new StringBuilder();
+
+            foreach (ManagementObject mObject in searcher.Get())
+            {
+                ManagementPath path = new ManagementPath(mObject["GroupComponent"].ToString());
+
+                if (path.ClassName == "Win32_Group")
+                {
+                    String[] names = path.RelativePath.Split(',');
+                    strGroups.Append(names[1].Substring(names[1].IndexOf("=") + 1).Replace('"', ' ').Trim() + ", ");
+                }
+            }
+            return strGroups.ToString();
+        }
+
+        private bool IsAdministrator()
+        {
+            WindowsIdentity identity = WindowsIdentity.GetCurrent();
+            WindowsPrincipal principal = new WindowsPrincipal(identity);
+            return principal.IsInRole(WindowsBuiltInRole.Administrator);
+        }
+
         public T GetProperties<T>(ManagementObject obj,string prop_name) where T : IConvertible
         {
             T _ret;
@@ -465,31 +761,34 @@ namespace lib.WinInventory
         {
             try
             {
-                ManagementObjectSearcher myPrinterObject = new ManagementObjectSearcher("select * from Win32_Printer");
+                
+                    ManagementObjectSearcher myPrinterObject = new ManagementObjectSearcher("select * from Win32_Printer");
+                    ManagementObjectCollection objCol = myPrinterObject.Get();
 
-                foreach (ManagementObject obj in myPrinterObject.Get())
-                {
-                    host_printer _newPrinter = new host_printer();
-                    _newPrinter.Name = this.GetProperties<string>(obj, "Name").ToLower();
-                    _newPrinter.IsNetwork = this.GetProperties<Boolean>(obj, "Network");
-                    _newPrinter.IsDefaultPrinter = this.GetProperties<Boolean>(obj, "Default");
-                    _newPrinter.DeviceID = this.GetProperties<string>(obj, "DeviceID").ToLower();
-                    _newPrinter.Status = this.GetProperties<string>(obj, "Status").ToLower();
+                    foreach (ManagementObject obj in objCol)
+                    {
+                        host_printer _newPrinter = new host_printer();
+                        _newPrinter.Name = this.GetProperties<string>(obj, "Name").ToLower();
+                        _newPrinter.IsNetwork = this.GetProperties<Boolean>(obj, "Network");
+                        _newPrinter.IsDefaultPrinter = this.GetProperties<Boolean>(obj, "Default");
+                        _newPrinter.DeviceID = this.GetProperties<string>(obj, "DeviceID").ToLower();
+                        _newPrinter.Status = this.GetProperties<string>(obj, "Status").ToLower();
 
-                    string logmessage = "";
-                    if (_newPrinter.IsDefaultPrinter)
-                    {
-                        logmessage = "(default) "+ _newPrinter.Name;
+                        string logmessage = "";
+                        if (_newPrinter.IsDefaultPrinter)
+                        {
+                            logmessage = "(default) " + _newPrinter.Name;
+                        }
+                        else
+                        {
+                            logmessage = _newPrinter.Name;
+                        }
+                        logger.Info("Printer: " + logmessage);
+                        this.MyHost.printers.Add(_newPrinter);
                     }
-                    else
-                    {
-                        logmessage = _newPrinter.Name;
-                    }
-                    logger.Info("Printer: " + logmessage);
-                    this.MyHost.printers.Add(_newPrinter);
-                }
+                
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 logger.Error(ex, "Printer: ");
             }
@@ -735,47 +1034,66 @@ namespace lib.WinInventory
 
         }
 
+            
+
+        private List<string> GetFolderProfiles()
+        {
+          //List<string> _ret = new List<string>();
+
+            string userProfilePath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            userProfilePath = userProfilePath.Substring(0, userProfilePath.Length - this.MyHost.users.CurentLogUserName.Length);
+            List<string> _ret = Directory.GetDirectories(userProfilePath).ToList<string>();
+            if (_ret.Contains("C:\\Users\\All Users"))
+            {
+                _ret.Remove("C:\\Users\\All Users");
+            }
+            if (_ret.Contains("C:\\Users\\Default User"))
+            {
+                _ret.Remove("C:\\Users\\Default User");
+            }
+            if (_ret.Contains("C:\\Users\\defaultuser0"))
+            {
+                _ret.Remove("C:\\Users\\defaultuser0");
+            }
+            if (_ret.Contains("C:\\Users\\Default"))
+            {
+                _ret.Remove("C:\\Users\\Default");
+            }
+            if (_ret.Contains("C:\\Users\\Public"))
+            {
+                _ret.Remove("C:\\Users\\Public");
+            }
+            if (_ret.Contains("C:\\Users\\" + this.MyHost.users.CurentLogUserName))
+            {
+                _ret.Remove("C:\\Users\\" + this.MyHost.users.CurentLogUserName);
+            }
+            List<string> CleanProfiles = new List<string>();
+            foreach (string profile in _ret)
+            {
+                CleanProfiles.Add(profile.Split('\\')[2]);
+            }
+
+            _ret = CleanProfiles;
+            return _ret;
+        }
+
+
         private void GetHostUser()
         {
             try
             {
-                this.MyHost.users.CurentLogUserName = Environment.UserName;
-                string userProfilePath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                userProfilePath = userProfilePath.Substring(0, userProfilePath.Length - this.MyHost.users.CurentLogUserName.Length);
-                List<string> Allprofiles = Directory.GetDirectories(userProfilePath).ToList<string>();
-                if (Allprofiles.Contains("C:\\Users\\All Users"))
-                {
-                    Allprofiles.Remove("C:\\Users\\All Users");
-                }
-                if (Allprofiles.Contains("C:\\Users\\Default User"))
-                {
-                    Allprofiles.Remove("C:\\Users\\Default User");
-                }
-                if (Allprofiles.Contains("C:\\Users\\defaultuser0"))
-                {
-                    Allprofiles.Remove("C:\\Users\\defaultuser0");
-                }
-                if (Allprofiles.Contains("C:\\Users\\Default"))
-                {
-                    Allprofiles.Remove("C:\\Users\\Default");
-                }
-                if (Allprofiles.Contains("C:\\Users\\Public"))
-                {
-                    Allprofiles.Remove("C:\\Users\\Public");
-                }
-                if (Allprofiles.Contains("C:\\Users\\"+ this.MyHost.users.CurentLogUserName))
-                {
-                    Allprofiles.Remove("C:\\Users\\" + this.MyHost.users.CurentLogUserName);
-                }
-                List<string> CleanProfiles = new List<string>();
-                foreach(string profile in Allprofiles)
-                {
-                    CleanProfiles.Add(profile.Split('\\')[2]);
-                }
+                //bool admin = this.IsAdministrator();
+                //this.GetGroupsForCurentDomainUser();
+                //this.GetLocalUser();
+                //this.GetLocalGroup();
 
-                this.MyHost.users.profiles = CleanProfiles;
-                
-                logger.Info(string.Format("User: login={0} #other={1}", this.MyHost.users.CurentLogUserName, CleanProfiles.Count.ToString()));
+                this.MyHost.users.CurentLogUserName = Environment.UserName;
+                this.MyHost.users.IsCurentLogUserIsAdmin = this.IsAdministrator();
+                this.MyHost.users.profiles = this.GetFolderProfiles();
+                this.MyHost.users.localGroups = this.GetLocalGroup();
+                this.MyHost.users.localUsers = this.GetLocalUser();
+
+                logger.Info(string.Format("User: login={0} #other={1}", this.MyHost.users.CurentLogUserName, this.MyHost.users.profiles.Count.ToString()));
                                 
                 //EventLog logs = new EventLog("Security");
                 //List<string> usr = new List<string>();
@@ -827,20 +1145,26 @@ namespace lib.WinInventory
         }
         public host RunDetection()
         {
-            logger.Info("start RunDetection"); 
-            this.getOS();
-            this.getCPU();
-            this.getDISK();
-            this.getVIDEO();
-            this.getNETWORK();
+            logger.Info("start RunDetection");
+
+            //List<string> ExeFile = this.GetFileList("*.exe", "c:\\").ToList<string>();
             this.getPRINTER();
-            this.getSOUND_CARD();
-            this.getRAM_and_OtherInfo();
-            this.GetLOGS();
-            this.GetMonitor();
-            this.GetHostUser();
-            logger.Info("end_RunDetection");
-            return this.MyHost;
+            using (new Impersonator(@"csa\adm_boucher", "lnaf82gaz!"))
+            {
+                this.GetSoftware();
+                this.getOS();
+                this.getCPU();
+                this.getDISK();
+                this.getVIDEO();
+                this.getNETWORK();
+                this.getSOUND_CARD();
+                this.getRAM_and_OtherInfo();
+                this.GetLOGS();
+                this.GetMonitor();
+                this.GetHostUser();
+                logger.Info("end_RunDetection");
+                return this.MyHost;
+            }
         }
         #endregion
     }

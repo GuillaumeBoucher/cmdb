@@ -25,6 +25,8 @@ namespace LibGetAdData
         private string adName;
         private string adPath;
         private Logger Log;
+        private Logger logger = LogManager.GetCurrentClassLogger();
+
         private enum Enum_UserAccountControl : int
         {
             /// <summary>
@@ -176,12 +178,11 @@ namespace LibGetAdData
 
         // Constructeur
         // ***********************************************
-        public GetActiveDirectory(string path, string name, bool isConsole, bool isLog)
+        public GetActiveDirectory(string path, string name)
         {
             this.adName = name;
             this.adPath = path;
-            this.GetFirstRoot();
-            this.InitLogger(isConsole, isLog);
+            this.GetFirstRoot();            
 
         }
 
@@ -274,32 +275,7 @@ namespace LibGetAdData
                 }
             }
         }
-        private void InitLogger(bool isConsole, bool isLog)
-        {
-            string log_file_path = ConfigurationManager.AppSettings["log_file_path"].ToString();
-            string log_min_level = ConfigurationManager.AppSettings["log_min_level"].ToString();
-            string log_max_level = ConfigurationManager.AppSettings["log_max_level"].ToString();
-
-
-            //logrotate : supression des anciens logs
-            this.LogFileRotate();
-            LoggingConfiguration config = new NLog.Config.LoggingConfiguration();
-
-            if (isLog)
-            {
-                NLog.Targets.FileTarget logfile = new NLog.Targets.FileTarget("logfile") { FileName = log_file_path };
-                config.AddRule(this.GetLogLevel(log_min_level), this.GetLogLevel(log_max_level), logfile);
-            }
-
-            if (isConsole)
-            {
-                NLog.Targets.ConsoleTarget logconsole = new NLog.Targets.ConsoleTarget("logconsole");
-                config.AddRule(LogLevel.Info, LogLevel.Fatal, logconsole);
-            }
-
-            NLog.LogManager.Configuration = config;
-            this.Log = NLog.LogManager.GetCurrentClassLogger();
-        }
+       
         private SearchResultCollection FindObjectCategory(string ObjectCategory)
         {
             DirectoryEntry startingPoint = this._entryRoot;

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Models.hosts;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -23,6 +24,7 @@ namespace model.hosts
             this.ram = new host_ram();
             this.carte_son = new List<host_sound_card>();
             this.printers = new List<host_printer>();
+            this.softwares = new List<host_software>();
             this.Recommandations = new List<host_recommandations>();
             String date = DateTime.Now.ToShortDateString();
             String time = DateTime.Now.ToShortTimeString();
@@ -43,6 +45,7 @@ namespace model.hosts
         public List<host_video_card> video_Cards { get; set; }
         public List<host_net_card> net_Cards { get; set; }
         public List<host_monitor> Monitors { get; set; }
+        public List<host_software> softwares { get; set; }
         public List<host_recommandations> Recommandations { get; set; }
         public host_ram ram { get; set; }
         public List<host_sound_card> carte_son { get; set; }
