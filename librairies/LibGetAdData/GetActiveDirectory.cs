@@ -23,8 +23,7 @@ namespace LibGetAdData
         // ***********************************************
         private DirectoryEntry _entryRoot;
         private string adName;
-        private string adPath;
-        private Logger Log;
+        private string adPath;        
         private Logger logger = LogManager.GetCurrentClassLogger();
 
         private enum Enum_UserAccountControl : int

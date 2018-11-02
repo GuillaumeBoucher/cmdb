@@ -13,7 +13,6 @@ using System.DirectoryServices;
 using System.Text;
 using System.Security.Principal;
 using XperiCode.Impersonator;
-using Models.hosts;
 
 namespace lib.WinInventory
 {
@@ -1149,8 +1148,7 @@ namespace lib.WinInventory
 
             //List<string> ExeFile = this.GetFileList("*.exe", "c:\\").ToList<string>();
             this.getPRINTER();
-            using (new Impersonator(@"csa\adm_boucher", "lnaf82gaz!"))
-            {
+            
                 this.GetSoftware();
                 this.getOS();
                 this.getCPU();
@@ -1163,8 +1161,7 @@ namespace lib.WinInventory
                 this.GetMonitor();
                 this.GetHostUser();
                 logger.Info("end_RunDetection");
-                return this.MyHost;
-            }
+                return this.MyHost;            
         }
         #endregion
     }
